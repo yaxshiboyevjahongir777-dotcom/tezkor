@@ -1,0 +1,85 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  PASSENGER
+  DRIVER
+  ADMIN
+}
+
+enum OrderStatus {
+  PENDING
+  SEARCHING
+  ACCEPTED
+  ARRIVED
+  STARTED
+  COMPLETED
+  CANCELLED
+}
+
+model User {
+  id        String @id @default(uuid())
+  phone     String @unique
+  password  String
+  fullName  String
+
+  role      UserRole @default(PASSENGER)
+
+  driver    Driver?
+  orders    Order[] @relation("PassengerOrders")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Driver {
+  id        String @id @default(uuid())
+  userId    String @unique
+
+  online    Boolean @default(false)
+  latitude  Float?
+  longitude Float?
+  rating    Float @default(5)
+
+  user      User @relation(fields: [userId], references: [id])
+
+  orders    Order[] @relation("DriverOrders")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Order {
+  id String @id @default(uuid())
+
+  passengerId String
+  driverId    String?
+
+  pickupAddress  String
+  dropoffAddress String
+
+  pickupLat Float
+  pickupLng Float
+
+  dropoffLat Float
+  dropoffLng Float
+
+  distanceKm Float?
+  durationMin Int?
+  price Float
+
+  status OrderStatus @default(PENDING)
+
+  passenger User @relation("PassengerOrders", fields: [passengerId], references: [id])
+
+  driver Driver? @relation("DriverOrders", fields: [driverId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
